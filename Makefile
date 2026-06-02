@@ -1,12 +1,15 @@
 GCC = g++
 GCC_FLAGS = -std=c++17 -Wall -Wextra -I./include
-SRC = $(wildcard ./src/*.cpp)
+SRC = ./src/main.cpp \
+	  $(wildcard ./src/math/*.cpp) \
+	  $(wildcard ./src/devices/*.cpp) \
+	  $(wildcard ./src/core/*.cpp)
 TARGET = spice
 
 .PHONY clean
 
 $(TARGET): $(SRC)
-	$(GCC) $(GCC_FLAGS) -o TARGET $(SRC)
+	$(GCC) $(GCC_FLAGS) -o $(TARGET) $(SRC)
 
 clean: 
 	rm -f $(TARGET)
