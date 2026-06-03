@@ -45,11 +45,25 @@ const char* deviceTypeName(DeviceType type){
     }
 }
 
+
+class Circuit;
+class Matrix;
+
 class Device{
-    public:
-    Device(std::string n, std::vector<std::string> ns): name(n), nodes(ns){}
+public:
+    Device(std::string n, std::vector<std::string> ns, DeviceType t): name(n), nodes(ns), type(t){}
     virtual ~Device() = default;
+
+    DeviceType getType() const{
+        return type;
+    }
+
+    virtual void setup(Circuit& circuit) = 0;
+
+    virtual void stamp() = 0;
+
 private:
     std::string name;
     std::vector<std::string> nodes;
+    DeviceType type;
 };
