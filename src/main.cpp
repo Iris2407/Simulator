@@ -1,10 +1,21 @@
 #include <iostream>
 #include <fstream>
 
+#include "../include/core/parser.h"
+#include "../include/core/circuit.h"
+
 int main(int argc, char* argv[]){
     if(argc != 2 && argc != 3){
         std::cerr << "Usage: " << argv[0] << " <inputfile> " <<
             " <outputfile>[optional] " << std::endl;
+        return 1;
+    }
+
+    Parser parser(argv[1]);
+    Circuit circuit;
+
+    if(!parser.parse(circuit)){
+        std::cerr << "Fail to parse file <" << argv[1] << "> " << std::endl;
         return 1;
     }
 

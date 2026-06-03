@@ -10,7 +10,7 @@ struct triplet{
 // Sparse Matrix in CSC style
 class Matrix{
 public:
-    Matrix(int m, int n): rows(m), cols(n){}
+    Matrix(int m = 0, int n = 0): rows(m), cols(n){}
 
     double* getElement(int row, int col){
         ;

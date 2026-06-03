@@ -2,18 +2,17 @@
 #include <string>
 #include <fstream>
 
-#include "circuit.h"
-#include "device.hpp"
+class Circuit;
+class Device;
 
 class Parser{
 public:
-    Parser(std::string f, Circuit& c): file(f), filename(f), circuit(c){}
+    Parser(std::string f): file(f), filename(f){}
     ~Parser() = default;
 
-    bool parse();
+    bool parse(Circuit& circuit);
 
 private:
     std::ifstream file;
     std::string filename;
-    Circuit circuit;
 };

@@ -58,6 +58,10 @@ public:
         return type;
     }
 
+    const std::vector<std::string>& getNodes() const {
+        return nodes;
+    }
+
     virtual void setup(Circuit& circuit) = 0;
 
     virtual void stamp() = 0;
