@@ -11,14 +11,6 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    Parser parser(argv[1]);
-    Circuit circuit;
-
-    if(!parser.parse(circuit)){
-        std::cerr << "Fail to parse file <" << argv[1] << "> " << std::endl;
-        return 1;
-    }
-
     std::ofstream ofs;
     std::ostream* os = &std::cout;
     if(argc == 3){
@@ -28,6 +20,14 @@ int main(int argc, char* argv[]){
             return 1;
         }
         os = &ofs;
+    }
+
+    Parser parser(argv[1]);
+    Circuit circuit;
+
+    if(!parser.parse(circuit)){
+        std::cerr << "Fail to parse file <" << argv[1] << "> " << std::endl;
+        return 1;
     }
 
     return 0;

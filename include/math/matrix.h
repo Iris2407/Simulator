@@ -1,25 +1,26 @@
 #pragma once
 #include <vector>
 
-struct triplet{
+struct Entry{
     int row;
     int col;
-    double value;
 };
 
 // Sparse Matrix in CSC style
 class Matrix{
 public:
-    Matrix(int m = 0, int n = 0): rows(m), cols(n){}
+    Matrix() = default;
+    ~Matrix() = default;
+
+    void build(std::vector<Entry>& entries, int dimension);
 
     double* getElement(int row, int col){
         ;
     }
 
 private:
-    int rows;
-    int cols;
-    int nnz;
+    int n=0;
+    int nnz=0;
 
     std::vector<int> rowIdx;
     std::vector<int> colPtr;

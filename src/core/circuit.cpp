@@ -13,3 +13,7 @@
 void Circuit::addDevice(std::string name, std::vector<std::string> nodes){
     ;
 }
+
+bool Circuit::build(){
+    return false;
+}
