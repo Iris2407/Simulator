@@ -33,3 +33,21 @@ void Matrix::build(std::vector<Entry>& entries, int dimension){
         colPtr[i] += colPtr[i-1];
     }
 }
+
+double* Matrix::getElement(int row, int col){
+    int start = colPtr[col];
+    int end = colPtr[col+1];
+
+    /** 
+     * Binary Search could be used to speed up the process,
+     * but it seems unnecessary now since this function
+     * is only called once for one device.
+     */
+    for(int i = start; i < end; ++i){
+        if(rowIdx[i] == row){
+            return &values[i];
+        }
+    }
+
+    return nullptr;
+}

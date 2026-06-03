@@ -14,9 +14,7 @@ public:
 
     void build(std::vector<Entry>& entries, int dimension);
 
-    double* getElement(int row, int col){
-        ;
-    }
+    double* getElement(int row, int col);
 
 private:
     int n=0;
