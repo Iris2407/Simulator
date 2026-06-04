@@ -47,7 +47,8 @@ const char* deviceTypeName(DeviceType type){
 
 
 class Circuit;
-class Matrix;
+class MNA;
+class NodeMap;
 
 class Device{
 public:
@@ -62,12 +63,27 @@ public:
         return nodes;
     }
 
-    virtual void setup(Circuit& circuit) = 0;
+    const std::vector<int>& getNodeIds() const {
+        return nodeIds;
+    }
+
+    void bindNodes(const NodeMap& nodemap){
+        nodeIds.resize(nodes.size());
+
+        for(std::size_t i = 0; i < nodes.size(); ++i){
+            nodeIds.push_back(nodemap.idxOf(nodes[i]));
+        }
+    }
+
+    virtual void pattern(MNA& mna) = 0;
+
+    virtual void bindMatrix(MNA& mna) = 0;
 
     virtual void stamp() = 0;
 
-private:
+protected:
     std::string name;
     std::vector<std::string> nodes;
+    std::vector<int> nodeIds;
     DeviceType type;
 };
