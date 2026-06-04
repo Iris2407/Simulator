@@ -11,7 +11,7 @@ public:
 
     void stamp() override {
         *pos -= i;
-        *pos += i;
+        *neg += i;
     }
 
 private:
