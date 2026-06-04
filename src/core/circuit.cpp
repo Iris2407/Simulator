@@ -1,19 +1,54 @@
 #include "../include/core/circuit.h"
 
 #include "../include/devices/device.hpp"
-#include "../include/devices/resistor.hpp"
-#include "../include/devices/inductor.hpp"
-#include "../include/devices/capacitor.hpp"
-#include "../include/devices/currentSource.hpp"
-#include "../include/devices/voltageSource.hpp"
-#include "../include/devices/diode.hpp"
-#include "../include/devices/bjt.hpp"
-#include "../include/devices/mosfet.hpp"
 
-void Circuit::addDevice(std::string name, std::vector<std::string> nodes){
-    ;
+template<class T, class... Args>
+void Circuit::addDevice(Args&&... args){
+    devices.emplace_back(
+        std::make_unique<T>(
+            std::forward<Args>(args)...
+        )
+    )
+}
+
+int Circuit::allocateUnknown(){
+    return nextUnknown++;
 }
 
 bool Circuit::build(){
-    return false;
+    nodeMap.build(devices);
+
+    for(auto& d: devices){
+        d->bindNodes(nodeMap);
+    }
+
+    nextUnknown = nodeMap.nodeCount();
+
+    for(auto& d: devices){
+        d->allocateUnknown(*this);
+    }
+
+    mna.resize(nextUnknown);
+
+    for(auto& d: devices){
+        d->pattern(mna);
+    }
+
+    mna.build();
+
+    for(auto&d: devices){
+        d->bindMatrix(mna);
+    }
+
+    return true;
+}
+
+bool Circuit::solve(){
+    mna.clear();
+
+    for(auto& d: devices){
+        d->stamp();
+    }
+
+    return mna.solve();
 }

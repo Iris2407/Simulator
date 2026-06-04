@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 
+#include "../math/mna.hpp"
 #include "../core/nodeMap.h"
 
 class Device;
@@ -10,15 +11,21 @@ public:
     Circuit() = default;
     ~Circuit() = default;
 
+    template<class T, class... Args>
+    void addDevice(Args&&... args);
+
     bool build();
 
-    void addDevice(std::string name, std::vector<std::string> nodes);
+    int allocateUnknown();
+
+    bool solve();
 
 private:
-    std::vector<double> rhs;
-    std::vector<double> solution;
+    MNA mna;
 
     std::vector<std::unique_ptr<Device>> devices;
+
+    int nextUnknown = 0;
 
     NodeMap nodeMap;
 };

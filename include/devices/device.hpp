@@ -75,6 +75,8 @@ public:
         }
     }
 
+    virtual void allocateUnknown(Circuit& circuit) = 0;
+
     virtual void pattern(MNA& mna) = 0;
 
     virtual void bindMatrix(MNA& mna) = 0;
