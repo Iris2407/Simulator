@@ -75,7 +75,7 @@ public:
         }
     }
 
-    virtual void allocateUnknown(Circuit& circuit) = 0;
+    virtual void allocateUnknown(Circuit& circuit) {}
 
     virtual void pattern(MNA& mna) = 0;
 
