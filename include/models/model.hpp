@@ -17,7 +17,9 @@ enum class ModelType {
 
 class Model {
 public:
-    Model(std::string n, ModelType t): name_(std::move(n)), type_(t) {}
+    Model(std::string n, ModelType t): name_(std::move(n)), type_(t) {
+        rebuildDcCache();
+    }
 
     const std::string& name() const { return name_; }
     ModelType type() const { return type_; }
