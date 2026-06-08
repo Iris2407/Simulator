@@ -69,6 +69,10 @@ public:
         return nodeIds;
     }
 
+    const std::string& getName() const {
+        return name;
+    }
+
     void bindNodes(const NodeMap& nodemap){
         nodeIds.resize(nodes.size());
 
@@ -77,7 +81,11 @@ public:
         }
     }
 
-    virtual void allocateUnknown(Circuit& circuit) {}
+    virtual void allocateUnknown(Circuit&) {}
+
+    virtual int branchUnknown() const {
+        return -1;
+    }
 
     virtual void pattern(MNA& mna) = 0;
 

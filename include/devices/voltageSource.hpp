@@ -12,6 +12,10 @@ public:
         branch = circuit.allocateUnknown();
     }
 
+    int branchUnknown() const override{
+        return branch;
+    }
+
     void pattern(MNA& mna) override{
         assert(branch >= 0);
 

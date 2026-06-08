@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
+
 #include "device.hpp"
 #include "../math/mna.hpp"
 #include "../models/model.hpp"
@@ -33,18 +36,44 @@ public:
             A12 = mna.ptr(p, n);
             A21 = mna.ptr(n, p);
         }
+
+        if(p >= 0){
+            rhsP_ = &mna.rhs(p);
+            solP_ = mna.solutionPtr(p);
+        }
+        if(n >= 0){
+            rhsN_ = &mna.rhs(n);
+            solN_ = mna.solutionPtr(n);
+        }
     }
 
     void stamp() override{
-        const double g = model_ ? model_->diodeConductance(area_) : 0.0;
+        if(!model_) return;
 
-        if(A11) *A11 += g;
-        if(A12) *A12 -= g;
-        if(A21) *A21 -= g;
-        if(A22) *A22 += g;
+        const auto& dc = model_->diodeDc();
+        const double area = area_ > 0.0 ? area_ : 1.0;
+        const double vd = voltage(solP_) - voltage(solN_);
+        const double nvt = dc.n * dc.vt;
+        const double arg = std::clamp(vd / nvt, -40.0, 40.0);
+        const double evd = std::exp(arg);
+        const double is = dc.is * area;
+        const double id = is * (evd - 1.0) + dc.gmin * vd;
+        const double gd = is * evd / nvt + dc.gmin;
+        const double bp = gd * vd - id;
+
+        if(A11) *A11 += gd;
+        if(A12) *A12 -= gd;
+        if(A21) *A21 -= gd;
+        if(A22) *A22 += gd;
+        if(rhsP_) *rhsP_ += bp;
+        if(rhsN_) *rhsN_ -= bp;
     }
 
 private:
+    static double voltage(const double* ptr){
+        return ptr ? *ptr : 0.0;
+    }
+
     const Model* model_;
     double area_;
 
@@ -52,4 +81,8 @@ private:
     double* A12 = nullptr;
     double* A21 = nullptr;
     double* A22 = nullptr;
+    double* rhsP_ = nullptr;
+    double* rhsN_ = nullptr;
+    const double* solP_ = nullptr;
+    const double* solN_ = nullptr;
 };

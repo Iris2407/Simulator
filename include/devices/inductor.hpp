@@ -1,18 +1,30 @@
 #pragma once
 
+#include <cassert>
+
 #include "device.hpp"
 #include "../core/circuit.h"
 
 /** Actually, in dc op analysis, 
  * the inductor is just treated same as 0V voltage source
+ *
+ *  Also, the value of the inductor is not used in the dc op analysis
+ *  So we just check the value of it satisfies L > 0
  */
+
 class Inductor: public Device{
 public:
     Inductor(std::string name, std::vector<std::string> nodes, double L):
-                Device(name, nodes, DeviceType::Inductor), l(L){}
+                Device(name, nodes, DeviceType::Inductor){
+        assert(L > 0.0);
+    }
 
-        void allocateUnknown(Circuit& circuit) override{
+    void allocateUnknown(Circuit& circuit) override{
         branch = circuit.allocateUnknown();
+    }
+
+    int branchUnknown() const override{
+        return branch;
     }
 
     void pattern(MNA& mna) override{
@@ -53,8 +65,6 @@ public:
     }
 
 private:
-    double l;
-
     double* posBranch = nullptr;
     double* negBranch = nullptr;
     double* branchPos = nullptr;

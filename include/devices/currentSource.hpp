@@ -10,7 +10,7 @@ public:
 
     ~CurrentSource() = default;
 
-    void pattern(MNA& mna) override{}
+    void pattern(MNA&) override{}
 
     void bindMatrix(MNA& mna) override {
         const int p = nodeIds[0];

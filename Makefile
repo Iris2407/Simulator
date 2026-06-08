@@ -6,6 +6,8 @@ SRC = ./src/main.cpp \
 	  $(wildcard ./src/devices/*.cpp) \
 	  $(wildcard ./src/core/*.cpp)
 TARGET = spice
+TESTCASE_DIR ?= testcase
+ACTUAL_DIR ?= actual
 
 UNAME_S := $(shell uname -s)
 
@@ -75,5 +77,14 @@ check-deps: check-eigen
 $(TARGET):  check-eigen $(SRC)
 	$(CXX) $(CXX_FLAGS) $(EIGEN_FLAGS) -o $(TARGET) $(SRC)
 
+test: $(TARGET)
+	@mkdir -p $(ACTUAL_DIR)
+	@for f in $(TESTCASE_DIR)/*.cir; do \
+		base=$$(basename "$$f" .cir); \
+		echo "Running $$base"; \
+		./$(TARGET) "$$f" > "$(ACTUAL_DIR)/$$base.out" 2> "$(ACTUAL_DIR)/$$base.err"; \
+	done
+
 clean: 
 	rm -f $(TARGET)
+	rm -rf $(ACTUAL_DIR)/

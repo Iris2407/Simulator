@@ -93,6 +93,14 @@ public:
         return x_;
     }
 
+    void setSolution(const Eigen::VectorXd& x){
+        x_ = x;
+    }
+
+    const double* solutionPtr(int row) const{
+        return &x_[row];
+    }
+
     double voltage(int node) const{
         return x_[node];
     }

@@ -30,5 +30,17 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    if(!circuit.build()){
+        std::cerr << "Fail to build circuit <" << argv[1] << "> " << std::endl;
+        return 1;
+    }
+
+    if(!circuit.solve()){
+        std::cerr << "Fail to solve circuit <" << argv[1] << "> " << std::endl;
+        return 1;
+    }
+
+    circuit.printOperatingPoint(*os);
+
     return 0;
 }

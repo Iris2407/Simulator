@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+
 #include "device.hpp"
 #include "../math/mna.hpp"
 #include "../models/model.hpp"
@@ -12,64 +16,113 @@ public:
     const Model* model() const { return model_; }
 
     void pattern(MNA& mna) override{
-        addPairPattern(mna, 0, 2);
-        addPairPattern(mna, 1, 2);
+        addFullPattern(mna);
     }
 
     void bindMatrix(MNA& mna) override{
-        bindPair(mna, 0, 2, c_e_);
-        bindPair(mna, 1, 2, b_e_);
+        for(int r = 0; r < 3; ++r){
+            const int row = nodeIds[r];
+            if(row >= 0){
+                rhs_[r] = &mna.rhs(row);
+                sol_[r] = mna.solutionPtr(row);
+            }
+
+            for(int c = 0; c < 3; ++c){
+                const int col = nodeIds[c];
+                if(row >= 0 && col >= 0){
+                    A_[r][c] = mna.ptr(row, col);
+                }
+            }
+        }
     }
 
     void stamp() override{
-        const double gbe = model_ ? model_->bjtBaseEmitterConductance(area_) : 0.0;
-        const double gce = model_ ? model_->bjtCollectorEmitterConductance(area_) : 0.0;
+        if(!model_) return;
 
-        stampPair(c_e_, gce);
-        stampPair(b_e_, gbe);
+        const auto& dc = model_->bjtDc();
+        const double area = area_ > 0.0 ? area_ : 1.0;
+        const double polarity = model_->type() == ModelType::PNP ? -1.0 : 1.0;
+        const double vc = voltage(sol_[0]);
+        const double vb = voltage(sol_[1]);
+        const double ve = voltage(sol_[2]);
+        const double vbe = polarity * (vb - ve);
+        const double vbc = polarity * (vb - vc);
+        const double argBe = std::clamp(vbe / (dc.nf * dc.vt), -40.0, 40.0);
+        const double argBc = std::clamp(vbc / (dc.nr * dc.vt), -40.0, 40.0);
+        const double ebe = std::exp(argBe);
+        const double ebc = std::exp(argBc);
+        const double is = dc.is * area;
+        const double ibe = polarity * (is / dc.bf) * (ebe - 1.0);
+        const double ibc = polarity * (is / dc.br) * (ebc - 1.0);
+        const double icc = polarity * is * ((ebe - 1.0) - (ebc - 1.0));
+        const double gbe = is * ebe / (dc.bf * dc.nf * dc.vt) + dc.gmin;
+        const double gbc = is * ebc / (dc.br * dc.nr * dc.vt) + dc.gmin;
+        const double gmF = is * ebe / (dc.nf * dc.vt);
+        const double gmR = is * ebc / (dc.nr * dc.vt);
+
+        std::array<double, 3> f = {0.0, 0.0, 0.0};
+        std::array<std::array<double, 3>, 3> j = {};
+
+        stampBranch(f, j, 1, 2, ibe + dc.gmin * (vb - ve), gbe);
+        stampBranch(f, j, 1, 0, ibc + dc.gmin * (vb - vc), gbc);
+
+        f[0] += icc;
+        f[2] -= icc;
+        j[0][1] += gmF - gmR;
+        j[0][2] -= gmF;
+        j[0][0] += gmR;
+        j[2][1] -= gmF - gmR;
+        j[2][2] += gmF;
+        j[2][0] -= gmR;
+
+        stampLinearization(f, j);
     }
 
 private:
-    struct PairPtrs {
-        double* A11 = nullptr;
-        double* A12 = nullptr;
-        double* A21 = nullptr;
-        double* A22 = nullptr;
-    };
+    using Vec3 = std::array<double, 3>;
+    using Mat3 = std::array<std::array<double, 3>, 3>;
 
-    void addPairPattern(MNA& mna, int a, int b){
-        const int p = nodeIds[a];
-        const int n = nodeIds[b];
+    static double voltage(const double* ptr){
+        return ptr ? *ptr : 0.0;
+    }
 
-        if(p >= 0) mna.addPattern(p, p);
-        if(n >= 0) mna.addPattern(n, n);
-        if(p >= 0 && n >= 0){
-            mna.addPattern(p, n);
-            mna.addPattern(n, p);
+    void addFullPattern(MNA& mna){
+        for(int r = 0; r < 3; ++r){
+            const int row = nodeIds[r];
+            if(row < 0) continue;
+            for(int c = 0; c < 3; ++c){
+                const int col = nodeIds[c];
+                if(col >= 0){
+                    mna.addPattern(row, col);
+                }
+            }
         }
     }
 
-    void bindPair(MNA& mna, int a, int b, PairPtrs& ptrs){
-        const int p = nodeIds[a];
-        const int n = nodeIds[b];
-
-        if(p >= 0) ptrs.A11 = mna.ptr(p, p);
-        if(n >= 0) ptrs.A22 = mna.ptr(n, n);
-        if(p >= 0 && n >= 0){
-            ptrs.A12 = mna.ptr(p, n);
-            ptrs.A21 = mna.ptr(n, p);
-        }
+    static void stampBranch(Vec3& f, Mat3& j, int p, int n, double i, double g){
+        f[p] += i;
+        f[n] -= i;
+        j[p][p] += g;
+        j[p][n] -= g;
+        j[n][p] -= g;
+        j[n][n] += g;
     }
 
-    void stampPair(PairPtrs& ptrs, double g){
-        if(ptrs.A11) *ptrs.A11 += g;
-        if(ptrs.A12) *ptrs.A12 -= g;
-        if(ptrs.A21) *ptrs.A21 -= g;
-        if(ptrs.A22) *ptrs.A22 += g;
+    void stampLinearization(const Vec3& f, const Mat3& j){
+        const Vec3 v = {voltage(sol_[0]), voltage(sol_[1]), voltage(sol_[2])};
+        for(int r = 0; r < 3; ++r){
+            double b = -f[r];
+            for(int c = 0; c < 3; ++c){
+                if(A_[r][c]) *A_[r][c] += j[r][c];
+                b += j[r][c] * v[c];
+            }
+            if(rhs_[r]) *rhs_[r] += b;
+        }
     }
 
     const Model* model_;
     double area_;
-    PairPtrs c_e_;
-    PairPtrs b_e_;
+    std::array<std::array<double*, 3>, 3> A_ = {};
+    std::array<double*, 3> rhs_ = {};
+    std::array<const double*, 3> sol_ = {};
 };

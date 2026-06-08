@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <iosfwd>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -33,6 +34,8 @@ public:
     int allocateUnknown();
 
     bool solve();
+
+    void printOperatingPoint(std::ostream& os) const;
 
 private:
     MNA mna;
