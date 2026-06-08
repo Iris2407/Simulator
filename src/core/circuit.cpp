@@ -1,6 +1,7 @@
 #include "../include/core/circuit.h"
 
 #include <algorithm>
+#include <ctime>
 #include <iomanip>
 #include <ostream>
 
@@ -56,9 +57,15 @@ bool Circuit::solve(){
     constexpr double tolerance = 1.0e-9;
     constexpr double maxStep = 1.0;
 
+    solveStats = {};
+    solveStats.maxIterations = maxIterations;
+    solveStats.tolerance = tolerance;
+
+    const std::clock_t startClock = std::clock();
     Eigen::VectorXd previous = mna.solution();
 
     for(int iter = 0; iter < maxIterations; ++iter){
+        solveStats.iterations = iter + 1;
         mna.clear();
 
         for(auto& d: devices){
@@ -66,6 +73,7 @@ bool Circuit::solve(){
         }
 
         if(!mna.solve()){
+            solveStats.cpuSeconds = double(std::clock() - startClock) / CLOCKS_PER_SEC;
             return false;
         }
 
@@ -76,10 +84,14 @@ bool Circuit::solve(){
             if(rawDelta > maxStep){
                 current = previous + step * (maxStep / rawDelta);
                 mna.setSolution(current);
+                ++solveStats.dampedSteps;
             }
 
             const double delta = (current - previous).lpNorm<Eigen::Infinity>();
+            solveStats.finalDelta = delta;
             if(delta < tolerance){
+                solveStats.converged = true;
+                solveStats.cpuSeconds = double(std::clock() - startClock) / CLOCKS_PER_SEC;
                 return true;
             }
         }
@@ -87,12 +99,22 @@ bool Circuit::solve(){
         previous = current;
     }
 
+    solveStats.cpuSeconds = double(std::clock() - startClock) / CLOCKS_PER_SEC;
     return false;
 }
 
 void Circuit::printOperatingPoint(std::ostream& os) const{
     os << "Operating Point\n";
     os << std::scientific << std::setprecision(10);
+
+    os << "Newton Info\n";
+    os << "converged " << (solveStats.converged ? "yes" : "no") << '\n';
+    os << "iterations " << solveStats.iterations << '\n';
+    os << "max_iterations " << solveStats.maxIterations << '\n';
+    os << "final_delta " << solveStats.finalDelta << '\n';
+    os << "tolerance " << solveStats.tolerance << '\n';
+    os << "damped_steps " << solveStats.dampedSteps << '\n';
+    os << "cpu_time_seconds " << solveStats.cpuSeconds << '\n';
 
     const auto& names = nodeMap.nodeNameByIdx();
     const auto& x = mna.solution();

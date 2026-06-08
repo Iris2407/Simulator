@@ -38,6 +38,16 @@ public:
     void printOperatingPoint(std::ostream& os) const;
 
 private:
+    struct SolveStats {
+        bool converged = false;
+        int iterations = 0;
+        int maxIterations = 0;
+        int dampedSteps = 0;
+        double finalDelta = 0.0;
+        double tolerance = 0.0;
+        double cpuSeconds = 0.0;
+    };
+
     MNA mna;
 
     std::vector<std::unique_ptr<Device>> devices;
@@ -47,4 +57,6 @@ private:
     int nextUnknown = 0;
 
     NodeMap nodeMap;
+
+    SolveStats solveStats;
 };
