@@ -1,14 +1,18 @@
 #include "../include/core/circuit.h"
 
 #include "../include/devices/device.hpp"
+#include "../include/models/model.hpp"
 
-template<class T, class... Args>
-void Circuit::addDevice(Args&&... args){
-    devices.emplace_back(
-        std::make_unique<T>(
-            std::forward<Args>(args)...
-        )
-    )
+const Model* Circuit::addModel(std::unique_ptr<Model> model){
+    const std::string name = model->name();
+    auto& slot = models[name];
+    slot = std::move(model);
+    return slot.get();
+}
+
+const Model* Circuit::findModel(const std::string& name) const{
+    auto it = models.find(name);
+    return it == models.end() ? nullptr : it->second.get();
 }
 
 int Circuit::allocateUnknown(){

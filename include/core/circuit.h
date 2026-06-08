@@ -1,10 +1,14 @@
 #pragma once
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include "../math/mna.hpp"
 #include "../core/nodeMap.h"
-
-class Device;
+#include "../devices/device.hpp"
+#include "../math/mna.hpp"
+#include "../models/model.hpp"
 
 class Circuit{
 public:
@@ -12,7 +16,17 @@ public:
     ~Circuit() = default;
 
     template<class T, class... Args>
-    void addDevice(Args&&... args);
+    void addDevice(Args&&... args){
+        devices.emplace_back(
+            std::make_unique<T>(
+                std::forward<Args>(args)...
+            )
+        );
+    }
+
+    const Model* addModel(std::unique_ptr<Model> model);
+
+    const Model* findModel(const std::string& name) const;
 
     bool build();
 
@@ -24,6 +38,8 @@ private:
     MNA mna;
 
     std::vector<std::unique_ptr<Device>> devices;
+
+    std::unordered_map<std::string, std::unique_ptr<Model>> models;
 
     int nextUnknown = 0;
 

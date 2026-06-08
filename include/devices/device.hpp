@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <vector>
 
@@ -12,7 +14,7 @@ enum class DeviceType{
     MOSFET
 };
 
-const char* deviceTypeName(DeviceType type){
+inline const char* deviceTypeName(DeviceType type){
     switch (type)
     {
         case DeviceType::Resistor:{
@@ -71,7 +73,7 @@ public:
         nodeIds.resize(nodes.size());
 
         for(std::size_t i = 0; i < nodes.size(); ++i){
-            nodeIds.push_back(nodemap.idxOf(nodes[i]));
+            nodeIds[i] = nodemap.idxOf(nodes[i]);
         }
     }
 

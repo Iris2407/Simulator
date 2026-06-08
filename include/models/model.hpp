@@ -1,0 +1,158 @@
+#pragma once
+
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <unordered_map>
+#include <utility>
+
+enum class ModelType {
+    Diode,
+    NPN,
+    PNP,
+    NMOS,
+    PMOS,
+    Unknown
+};
+
+class Model {
+public:
+    Model(std::string n, ModelType t): name_(std::move(n)), type_(t) {}
+
+    const std::string& name() const { return name_; }
+    ModelType type() const { return type_; }
+
+    void setParam(std::string key, double value) {
+        params_[std::move(key)] = value;
+        rebuildDcCache();
+    }
+
+    double param(const std::string& key, double fallback) const {
+        auto it = params_.find(key);
+        return it == params_.end() ? fallback : it->second;
+    }
+
+    bool isDiode() const {
+        return type_ == ModelType::Diode;
+    }
+
+    bool isBjt() const {
+        return type_ == ModelType::NPN || type_ == ModelType::PNP;
+    }
+
+    bool isMosfet() const {
+        return type_ == ModelType::NMOS || type_ == ModelType::PMOS;
+    }
+
+    struct DiodeDcParams {
+        double is = 1.0e-14;
+        double n = 1.0;
+        double vt = 0.025852;
+        double rs = 0.0;
+        double gmin = 1.0e-12;
+    };
+
+    struct BjtDcParams {
+        double is = 1.0e-16;
+        double bf = 100.0;
+        double br = 1.0;
+        double nf = 1.0;
+        double nr = 1.0;
+        double vt = 0.025852;
+        double gmin = 1.0e-12;
+    };
+
+    struct MosDcParams {
+        double vto = 0.7;
+        double kp = 20.0e-6;
+        double lambda = 0.0;
+        double gmin = 1.0e-12;
+    };
+
+    const DiodeDcParams& diodeDc() const {
+        return diodeDc_;
+    }
+
+    const BjtDcParams& bjtDc() const {
+        return bjtDc_;
+    }
+
+    const MosDcParams& mosDc() const {
+        return mosDc_;
+    }
+
+    double diodeConductance(double area) const {
+        return positive(area, 1.0) / dc_.diodeRs;
+    }
+
+    double bjtBaseEmitterConductance(double area) const {
+        return positive(area, 1.0) / dc_.bjtRbe;
+    }
+
+    double bjtCollectorEmitterConductance(double area) const {
+        return positive(area, 1.0) / dc_.bjtRce;
+    }
+
+    double mosDrainSourceConductance(double w, double l) const {
+        const double width = positive(w, 1.0);
+        const double length = positive(l, 1.0);
+        return (width / length) / dc_.mosRds;
+    }
+
+private:
+    struct DcCache {
+        double diodeRs = 1.0e12;
+        double bjtRbe = 1.0e12;
+        double bjtRce = 1.0e12;
+        double mosRds = 1.0e12;
+    };
+
+    static double positive(double value, double fallback) {
+        return value > 0.0 && std::isfinite(value) ? value : fallback;
+    }
+
+    void rebuildDcCache() {
+        dc_.diodeRs = positive(param("rs", 1.0e12), 1.0e12);
+        dc_.bjtRbe = positive(param("rbe", 1.0e12), 1.0e12);
+        dc_.bjtRce = positive(param("rce", 1.0e12), 1.0e12);
+        dc_.mosRds = positive(param("rds", 1.0e12), 1.0e12);
+
+        diodeDc_.is = positive(param("is", diodeDc_.is), 1.0e-14);
+        diodeDc_.n = positive(param("n", diodeDc_.n), 1.0);
+        diodeDc_.vt = positive(param("vt", diodeDc_.vt), 0.025852);
+        diodeDc_.rs = positive(param("rs", diodeDc_.rs), 0.0);
+        diodeDc_.gmin = positive(param("gmin", diodeDc_.gmin), 1.0e-12);
+
+        bjtDc_.is = positive(param("is", bjtDc_.is), 1.0e-16);
+        bjtDc_.bf = positive(param("bf", param("beta", bjtDc_.bf)), 100.0);
+        bjtDc_.br = positive(param("br", bjtDc_.br), 1.0);
+        bjtDc_.nf = positive(param("nf", bjtDc_.nf), 1.0);
+        bjtDc_.nr = positive(param("nr", bjtDc_.nr), 1.0);
+        bjtDc_.vt = positive(param("vt", bjtDc_.vt), 0.025852);
+        bjtDc_.gmin = positive(param("gmin", bjtDc_.gmin), 1.0e-12);
+
+        const double defaultVto = type_ == ModelType::PMOS ? -0.7 : 0.7;
+        mosDc_.vto = param("vto", param("vt0", defaultVto));
+        mosDc_.kp = positive(param("kp", param("k", mosDc_.kp)), 20.0e-6);
+        mosDc_.lambda = positive(param("lambda", param("lam", mosDc_.lambda)), 0.0);
+        mosDc_.gmin = positive(param("gmin", mosDc_.gmin), 1.0e-12);
+
+        const double is = positive(param("is", 0.0), 0.0);
+        if(is > 0.0 && params_.find("rs") == params_.end()){
+            dc_.diodeRs = std::min(dc_.diodeRs, 0.026 / is);
+        }
+
+        const double beta = positive(param("bf", param("beta", 0.0)), 0.0);
+        if(is > 0.0 && beta > 0.0 && params_.find("rbe") == params_.end()){
+            dc_.bjtRbe = std::min(dc_.bjtRbe, 0.026 / (is * beta));
+        }
+    }
+
+    std::string name_;
+    ModelType type_;
+    std::unordered_map<std::string, double> params_;
+    DcCache dc_;
+    DiodeDcParams diodeDc_;
+    BjtDcParams bjtDc_;
+    MosDcParams mosDc_;
+};

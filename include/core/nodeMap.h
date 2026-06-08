@@ -11,13 +11,13 @@ public:
     NodeMap() = default;
     ~NodeMap() = default;
 
-    void build(std::vector<std::unique_ptr<Device>> devices);
+    void build(const std::vector<std::unique_ptr<Device>>& devices);
 
     int idxOf(std::string name) const;
 
     const std::vector<std::string>& nodeNameByIdx() const;
 
-    int nodeCount();
+    int nodeCount() const;
 
 private:
     std::unordered_map<std::string, int> name_to_idx;

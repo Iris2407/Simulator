@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <vector>
 
 class Circuit;
 class Device;
@@ -13,6 +14,9 @@ public:
     bool parse(Circuit& circuit);
 
 private:
+    bool parseLine(Circuit& circuit, const std::vector<std::string>& tokens);
+    bool parseModel(Circuit& circuit, const std::vector<std::string>& tokens);
+
     std::ifstream file;
     std::string filename;
 };

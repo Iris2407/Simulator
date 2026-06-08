@@ -3,6 +3,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 #include <vector>
+#include <stdexcept>
 #include <unordered_map>
 
 class MNA{
@@ -127,7 +128,7 @@ private:
         const int cols = A_.cols();
 
         for(int col = 0; col < cols; ++col){
-            for(int k = outer[col+1];
+            for(int k = outer[col];
                 k < outer[col+1];
                 ++k)
             {

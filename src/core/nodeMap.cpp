@@ -1,11 +1,14 @@
 #include "../include/core/nodeMap.h"
 #include "../include/devices/device.hpp"
 
-void NodeMap::build(std::vector<std::unique_ptr<Device>> devices){
+void NodeMap::build(const std::vector<std::unique_ptr<Device>>& devices){
+    name_to_idx.clear();
+    idx_to_name.clear();
+
     for(auto& device : devices){
         std::vector<std::string> nodes = device->getNodes();
         for(auto& node : nodes){
-            if(node == "0" || node == "GND"){
+            if(node == "0" || node == "GND" || node == "gnd"){
                 continue;
             }
             auto it = name_to_idx.find(node);
@@ -19,7 +22,7 @@ void NodeMap::build(std::vector<std::unique_ptr<Device>> devices){
 }
 
 int NodeMap::idxOf(std::string name) const {
-    if(name == "0" || name == "GND"){
+    if(name == "0" || name == "GND" || name == "gnd"){
         return -1;
     }
     
@@ -35,6 +38,6 @@ const std::vector<std::string>& NodeMap::nodeNameByIdx() const {
     return idx_to_name;
 }
 
-int NodeMap::nodeCount(){
+int NodeMap::nodeCount() const{
     return name_to_idx.size();
 }
